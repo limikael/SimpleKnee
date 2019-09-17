@@ -1,0 +1,6 @@
+[submodule "submodule/modwb"]
+	path = submodule/modwb
+	url = https://github.com/limikael/modwb.git
+[submodule "submodule/pytriangle"]
+	path = submodule/pytriangle
+	url = https://github.com/limikael/pytriangle.git
