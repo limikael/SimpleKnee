@@ -128,6 +128,9 @@ def _calculateKnees(step=180):
 
 def _resetKnees():
 	doc=FreeCAD.ActiveDocument
+	if doc is None:
+		return
+
 	for o in doc.Objects:
 		if (o.TypeId=="App::Part"
 				and (o.Type=="Hip" or o.Type=="Knee")):
@@ -135,6 +138,17 @@ def _resetKnees():
 
 def _calcTimer():
 	_calculateKnees(1)
+
+class KneeObserver:
+	calculating=False
+
+	def slotChangedObject(self, o, prop):
+		if self.calculating:
+			return
+
+		self.calculating=True
+		_calculateKnees()
+		self.calculating=False
 
 @icon("res/CalculateKnees.svg")
 def CalculateKnees():
@@ -149,6 +163,13 @@ def ResetKnees():
 @icon("res/StartKneeSimulation.svg")
 def StartKneeSimulation():
 	StopKneeSimulation()
+	_calculateKnees()
+	FreeCAD.kneeObserver=KneeObserver()
+	FreeCAD.addDocumentObserver(FreeCAD.kneeObserver)
+
+@icon("res/StartKneeAnimation.svg")
+def StartKneeAnimation():
+	StopKneeSimulation()
 	FreeCAD.kneeTimer=Timer(50)
 	FreeCAD.kneeTimer.onTimer=_calcTimer
 
@@ -157,3 +178,7 @@ def StopKneeSimulation():
 	if "kneeTimer" in FreeCAD.__dict__:
 		FreeCAD.kneeTimer.stop()
 		del FreeCAD.kneeTimer
+
+	if "kneeObserver" in FreeCAD.__dict__:
+		FreeCAD.removeDocumentObserver(FreeCAD.kneeObserver)
+		del FreeCAD.kneeObserver
