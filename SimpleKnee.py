@@ -81,6 +81,8 @@ def _objectAngles(oo,o1,o2,debug=False):
 	return a
 
 def _calculateKnee(hipPart,kneePart,tipPart,targetPart,step=180):
+	kneePart.Placement.Rotation.Axis=hipPart.Placement.Rotation.Axis
+
 	hipCurrent=_getObjectRot(hipPart)
 	kneeCurrent=_getObjectRot(kneePart)
 
@@ -97,10 +99,7 @@ def _calculateKnee(hipPart,kneePart,tipPart,targetPart,step=180):
 	])
 
 	hipTarget=targetTriangle.get_degree(0)-defaultHipAngle
-	if hipPart.Placement.Rotation.Axis.dot(kneePart.Placement.Rotation.Axis)<0:
-		kneeTarget=180-(targetTriangle.get_degree(1)-defaultKneeAngle)
-	else:
-		kneeTarget=targetTriangle.get_degree(1)-defaultKneeAngle
+	kneeTarget=targetTriangle.get_degree(1)-defaultKneeAngle
 
 	_setObjectRot(hipPart,_approachAngle(hipCurrent,hipTarget,step))
 	_setObjectRot(kneePart,_approachAngle(kneeCurrent,kneeTarget,step))
