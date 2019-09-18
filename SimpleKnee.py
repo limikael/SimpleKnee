@@ -67,15 +67,28 @@ def _getObjectRot(o):
 		o=FreeCAD.ActiveDocument.getObjectsByLabel(o)[0]
 	return math.degrees(o.Placement.Rotation.Angle)
 
+def _objectAngles(oo,o1,o2,debug=False):
+	po=_getGlobalPosition(oo)
+	p1=_getGlobalPosition(o1)
+	p2=_getGlobalPosition(o2)
+	u=po.sub(p1)
+	v=po.sub(p2)
+	a=math.degrees(u.getAngle(v))
+
+	if oo.Placement.Rotation.Axis.dot(v.cross(u))<0:
+		return 360-a
+
+	return a
+
 def _calculateKnee(hipPart,kneePart,tipPart,targetPart,step=180):
-	currentKneeAngle=_getObjectRot(kneePart)
-	currentHipAngle=_getObjectRot(hipPart)
+	hipCurrent=_getObjectRot(hipPart)
+	kneeCurrent=_getObjectRot(kneePart)
 
 	_setObjectRot(kneePart,0)
 	_setObjectRot(hipPart,0)
 
-	defaultTriangle=_triangleFromObjects(kneePart,hipPart,tipPart)
-	defaultHipTriangle=_triangleFromObjects(hipPart,kneePart,targetPart)
+	defaultHipAngle=_objectAngles(hipPart,kneePart,targetPart)
+	defaultKneeAngle=_objectAngles(kneePart,tipPart,hipPart)
 
 	targetTriangle=Triangle([
 		_objectDistance(kneePart,tipPart),
@@ -83,11 +96,14 @@ def _calculateKnee(hipPart,kneePart,tipPart,targetPart,step=180):
 		_objectDistance(hipPart,kneePart)
 	])
 
-	kneeTarget=targetTriangle.get_degree(1)-defaultTriangle.get_degree(0)
-	hipTarget=targetTriangle.get_degree(0)-defaultHipTriangle.get_degree(0)
+	hipTarget=targetTriangle.get_degree(0)-defaultHipAngle
+	if hipPart.Placement.Rotation.Axis.dot(kneePart.Placement.Rotation.Axis)<0:
+		kneeTarget=180-(targetTriangle.get_degree(1)-defaultKneeAngle)
+	else:
+		kneeTarget=targetTriangle.get_degree(1)-defaultKneeAngle
 
-	_setObjectRot(kneePart,_approachAngle(currentKneeAngle,kneeTarget,step))
-	_setObjectRot(hipPart,_approachAngle(currentHipAngle,hipTarget,step))
+	_setObjectRot(hipPart,_approachAngle(hipCurrent,hipTarget,step))
+	_setObjectRot(kneePart,_approachAngle(kneeCurrent,kneeTarget,step))
 
 def _getChildPartByType(parent, childType):
 	for o in parent.OutList:
