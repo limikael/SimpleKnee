@@ -50,13 +50,6 @@ def _objectDistance(o1,o2):
 	p2=_getGlobalPosition(o2)
 	return math.sqrt((p2.x-p1.x)**2+(p2.y-p1.y)**2+(p2.z-p1.z)**2)
 
-def _triangleFromObjects(o1, o2, o3):
-	return Triangle([
-		_objectDistance(o2,o3),
-		_objectDistance(o3,o1),
-		_objectDistance(o1,o2)
-	])
-
 def _setObjectRot(o,angle):
 	if isinstance(o,str):
 		o=FreeCAD.ActiveDocument.getObjectsByLabel(o)[0]
@@ -80,7 +73,7 @@ def _objectAngles(oo,o1,o2,debug=False):
 
 	return a
 
-def _calculateKnee(hipPart,kneePart,tipPart,targetPart,step=180):
+def _calculateKnee(hipPart, kneePart, tipPart, targetPart, step=180):
 	kneePart.Placement.Rotation.Axis=hipPart.Placement.Rotation.Axis
 
 	hipCurrent=_getObjectRot(hipPart)
@@ -126,6 +119,27 @@ def _calculateKnees(step=180):
 			targetPart=a[0]
 			_calculateKnee(hipPart,kneePart,tipPart,targetPart,step)
 
+def _calculateSwivel(swivelPart, tipPart, targetPart, step=180):
+	_setObjectRot(swivelPart,0)
+	_setObjectRot(swivelPart,_objectAngles(swivelPart,targetPart,tipPart))
+	dist=_objectDistance(swivelPart,targetPart)
+	tipPart.Placement.Base.z=dist
+
+def _calculateSwivels(step=180):
+	doc=FreeCAD.ActiveDocument
+	for o in doc.Objects:
+		if o.TypeId=="App::Part" and o.Type=="Swivel":
+			swivelPart=o
+			tipPart=_getChildPartByType(swivelPart,"SwivelTip")
+
+			a=doc.getObjectsByLabel(tipPart.Id)
+			if len(a)<1:
+				raise Exception("Designated target "+tipPart.Id+" not found")
+
+			targetPart=a[0]
+			_calculateSwivel(swivelPart,tipPart,targetPart,step)
+
+
 def _resetKnees():
 	doc=FreeCAD.ActiveDocument
 	if doc is None:
@@ -136,8 +150,12 @@ def _resetKnees():
 				and (o.Type=="Hip" or o.Type=="Knee")):
 			o.Placement.Rotation.Angle=0
 
+		if o.TypeId=="App::Part" and o.Type=="Swivel":
+			o.Placement.Rotation.Angle=0
+
 def _calcTimer():
 	_calculateKnees(1)
+	_calculateSwivels(1)
 
 class KneeObserver:
 	calculating=False
@@ -148,12 +166,14 @@ class KneeObserver:
 
 		self.calculating=True
 		_calculateKnees()
+		_calculateSwivels()
 		self.calculating=False
 
 @icon("res/CalculateKnees.svg")
 def CalculateKnees():
 	StopKneeSimulation()
 	_calculateKnees()
+	_calculateSwivels()
 
 @icon("res/ResetKnees.svg")
 def ResetKnees():
@@ -164,6 +184,7 @@ def ResetKnees():
 def StartKneeSimulation():
 	StopKneeSimulation()
 	_calculateKnees()
+	_calculateSwivels()
 	FreeCAD.kneeObserver=KneeObserver()
 	FreeCAD.addDocumentObserver(FreeCAD.kneeObserver)
 
