@@ -191,7 +191,7 @@ def StartKneeSimulation():
 @icon("res/StartKneeAnimation.svg")
 def StartKneeAnimation():
 	StopKneeSimulation()
-	FreeCAD.kneeTimer=Timer(50)
+	FreeCAD.kneeTimer=Timer(100)
 	FreeCAD.kneeTimer.onTimer=_calcTimer
 
 @icon("res/StopKneeSimulation.svg")
